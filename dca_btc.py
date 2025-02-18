@@ -6,10 +6,12 @@ from rich.console import Console
 from rich.panel import Panel
 from src.multi_pair import MultiPairDCAManager
 from src.visualizer import DCAVisualizer
+from src.portfolio_analyzer import PortfolioAnalyzer
 
 console = Console()
 
 def main():
+    os.makedirs('dca', exist_ok=True)
     parser = argparse.ArgumentParser(description='Cryptocurrency Dollar Cost Averaging (DCA) Calculator')
     parser.add_argument('--start-date', type=str, help='Start date in YYYY-MM-DD format')
     parser.add_argument('--end-date', type=str, help='End date in YYYY-MM-DD format')
@@ -51,19 +53,26 @@ def main():
         results = manager.calculate_multiple_pairs(pairs_allocation, args.daily_investment, 
                                                 start_date, end_date, args.buy_period)
         
-        # Get first pair for visualization
-        first_pair = list(results.keys())[0]
-        first_token = first_pair.split('/')[0]
+        # Generate timestamp once for consistent file naming
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Create visualizer and plot results
-        visualizer = DCAVisualizer(results[first_pair]['results'], 
-                                 first_token, start_date, end_date)
-        visualizer.plot_single_pair()
+        # Create portfolio analyzer and display results
+        analyzer = PortfolioAnalyzer(results)
+        analyzer.display_portfolio_summary(timestamp)  # Pass timestamp for CSV naming
         
-        # Show completion message
+        # Create the charts directory
+        os.makedirs('dca', exist_ok=True)
+        
+        # Generate individual pair charts with consistent naming
+        for pair, data in results.items():
+            token = pair.split('/')[0]
+            visualizer = DCAVisualizer(data['results'], token, start_date, end_date)
+            visualizer.plot_single_pair(timestamp)  # Pass timestamp for consistent naming
+        
+        # Show completion message with new naming pattern
         console.print(Panel(
             "[green]Analysis completed successfully! 🎉[/green]\n" +
-            "Charts have been saved to the [cyan]dca/[/cyan] folder.",
+            f"Analysis files have been saved with timestamp {timestamp} in the [cyan]dca/[/cyan] folder",
             title="✅ Complete",
             border_style="green"
         ))

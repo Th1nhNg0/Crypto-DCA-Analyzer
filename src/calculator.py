@@ -25,6 +25,8 @@ class DCACalculator:
         lowest_price = float('inf')
         best_day = worst_day = None
         days_since_last_buy = 0
+        negative_pnl_days = 0
+        total_days = 0
         
         for _, row in self.df.iterrows():
             price = row['Close']
@@ -47,10 +49,18 @@ class DCACalculator:
             dca_price = total_invested / total_crypto if total_crypto > 0 else price
             pnl_percentage = ((price - dca_price) / dca_price * 100) if total_crypto > 0 else 0
             
+            # Track negative PnL days
+            if total_invested > 0:  # Only count after first investment
+                total_days += 1
+                if current_value < total_invested:
+                    negative_pnl_days += 1
+            
             dates.append(row['Start'])
             prices.append(price)
             dca_prices.append(dca_price)
             pnl_percentages.append(pnl_percentage)
+        
+        fear_index = (negative_pnl_days / total_days * 100) if total_days > 0 else 0
         
         return {
             'dates': dates,
@@ -65,5 +75,8 @@ class DCACalculator:
             'worst_day': worst_day,
             'avg_price': self.df['Close'].mean(),
             'cost_basis': total_invested/total_crypto if total_crypto > 0 else 0,
-            'current_value': total_crypto * self.df.iloc[-1]['Close']
+            'current_value': total_crypto * self.df.iloc[-1]['Close'],
+            'fear_index': fear_index,
+            'negative_pnl_days': negative_pnl_days,
+            'total_days': total_days
         }

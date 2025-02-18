@@ -37,7 +37,7 @@ class DCAVisualizer:
         self.end_date = end_date
         ChartStyle.setup()
 
-    def plot_single_pair(self):
+    def plot_single_pair(self, timestamp):
         r = self.results
         fig = plt.figure(figsize=(12, 8))
         
@@ -89,10 +89,13 @@ class DCAVisualizer:
         ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:+.1f}%'))
         ax2.legend(loc='upper left')
         
-        # Minimal stats box
+        # Add fear index to stats box
         pnl = r['current_value'] - r['total_invested']
         pnl_percentage = (pnl / r['total_invested'] * 100) if r['total_invested'] > 0 else 0
-        stats = f'Return: {pnl_percentage:+.1f}%\nAvg Cost: ${r["cost_basis"]:,.0f}'
+        fear_emoji = "😊" if r['fear_index'] < 30 else "😰" if r['fear_index'] < 60 else "😱"
+        stats = (f'Return: {pnl_percentage:+.1f}%\n'
+                f'Avg Cost: ${r["cost_basis"]:,.0f}\n'
+                f'Fear Index: {r["fear_index"]:.1f}% {fear_emoji}')
         
         # Adjust stats box position to avoid overlap
         plt.figtext(0.95, 0.95, stats,
@@ -101,7 +104,7 @@ class DCAVisualizer:
                    horizontalalignment='right',
                    fontsize=9)
         
-        # Save with proper spacing
-        plt.savefig(f'dca/dca_{self.token_symbol.lower()}.png', 
+        # Save with timestamp in filename
+        plt.savefig(f'dca/dca_analysis_{timestamp}_{self.token_symbol.lower()}.png', 
                    dpi=300, bbox_inches='tight',
                    pad_inches=0.2)

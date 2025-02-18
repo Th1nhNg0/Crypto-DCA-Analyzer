@@ -2,7 +2,7 @@
 
 A Python tool to analyze Dollar Cost Averaging (DCA) investment strategy for cryptocurrencies, supporting multiple pairs and custom buy periods.
 
-![DCA Analysis Example](./dca/dca_multiple.png)
+![DCA Analysis Example](./dca/dca_analysis_20240219_123456_btc.png)
 
 ## Features
 
@@ -14,14 +14,18 @@ A Python tool to analyze Dollar Cost Averaging (DCA) investment strategy for cry
 - Visual representation of results with price charts and P&L graphs
 - Support for different trading pairs with percentage allocation
 - Configurable daily investment amount
+- Fear Index tracking (% of days spent in negative returns)
+- Export of analysis results to CSV
+- Rich console output with detailed metrics and progress indicators
 
 ## Requirements
 
 ```
-pandas
-matplotlib
-ccxt
-colorama
+pandas>=2.1.0
+matplotlib>=3.8.0
+ccxt>=4.1.13
+rich>=13.7.0
+numpy>=1.24.0
 ```
 
 ## Installation
@@ -69,11 +73,18 @@ python dca_btc.py --start-date 2020-01-01 --end-date 2023-12-31 --daily-investme
 ## Output
 
 The tool generates:
-1. Detailed investment summary for each pair in the console
-2. Overall portfolio performance metrics
-3. Price history and average cost charts for each pair
-4. Profit/loss percentage charts for each pair
-5. Saves combined chart to `dca/dca_multiple.png`
+1. Detailed investment summary for each pair in the console, including:
+   - Total investment and current value
+   - Average cost basis and current price
+   - Profit/Loss metrics with visual indicators
+   - Fear Index showing percentage of days in negative territory
+   - Highest and lowest prices with dates
+2. Overall portfolio performance metrics with allocation breakdown
+3. Price charts and CSV files saved with consistent naming (e.g., `dca_analysis_20240219_123456_btc.png` and `dca_analysis_20240219_123456.csv`):
+   - Price history and average cost basis
+   - Profit/loss percentage over time
+   - Key statistics and trends
+4. All output files are saved in the `dca/` directory with timestamps for easy tracking
 
 ## Examples
 
@@ -90,3 +101,12 @@ python dca_btc.py --daily-investment 500 --pairs BTC/USDT:50 ETH/USDT:30 SOL/USD
 3. Monthly $1000 investment in BTC only:
 ```bash
 python dca_btc.py --daily-investment 1000 --pairs BTC/USDT:100 --buy-period 1m
+```
+
+## Notes
+
+- The tool automatically creates a `dca/` directory for storing output files
+- Analysis results are saved with timestamps for historical reference
+- Uses the Rich library for beautiful console output with progress indicators
+- Supports any trading pair available on the selected exchange
+- Error handling for network issues and exchange limitations

@@ -2,14 +2,14 @@
 
 A Python tool to analyze Dollar Cost Averaging (DCA) investment strategy for cryptocurrencies, supporting multiple pairs and custom buy periods.
 
-![DCA Analysis Example](./dca/dca_analysis_20240219_123456_btc.png)
+![DCA Analysis Example](./media/dca_btc.png)
 
 ## Features
 
 - Historical price data fetching from various exchanges (default: Binance)
 - Multi-pair DCA investment simulation with custom allocations
 - Flexible buy periods (daily, weekly, biweekly, monthly)
-- Detailed investment analysis for each pair
+- Detailed investment analysis for each pairdca_btc
 - Overall portfolio performance metrics
 - Visual representation of results with price charts and P&L graphs
 - Support for different trading pairs with percentage allocation
@@ -101,6 +101,35 @@ python dca_btc.py --daily-investment 500 --pairs BTC/USDT:50 ETH/USDT:30 SOL/USD
 3. Monthly $1000 investment in BTC only:
 ```bash
 python dca_btc.py --daily-investment 1000 --pairs BTC/USDT:100 --buy-period 1m
+```
+
+## Example Output
+
+When you run the tool, you'll see a detailed analysis in the console like this:
+
+```
+╭──────────── 💡 Analysis Parameters ────────────────╮
+│ Starting DCA analysis with:                        │
+│ • Investment: $100.00 per day                      │
+│ • Pairs:                                          │
+│   - BTC/USDT: 80.0%                               │
+│   - ETH/USDT: 20.0%                               │
+╰──────────────────────────────────────────────────╯
+
+For each pair, you'll see detailed metrics including:
+• Total invested and current value
+• Amount of crypto accumulated
+• Net Profit/Loss with percentage
+• Fear Index showing negative return days
+• Average cost basis and current price
+• Historical price extremes with dates
+
+Example portfolio summary:
+• Total Investment: $187,600.00
+• Current Value: $707,705.49
+• Net Profit/Loss: $520,105.49 (+277.24%)
+
+The tool also generates detailed charts and CSV files in the dca/ directory for further analysis.
 ```
 
 ## Notes

@@ -4,6 +4,8 @@ A Python tool to analyze Dollar Cost Averaging (DCA) investment strategy for cry
 
 ![DCA Analysis Example](./media/dca_btc.png)
 
+![CLI Example](./media/cli_log.png)
+
 ## Features
 
 - Historical price data fetching from various exchanges (default: Binance)

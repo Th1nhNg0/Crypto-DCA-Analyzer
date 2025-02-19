@@ -11,13 +11,12 @@ A Python tool to analyze Dollar Cost Averaging (DCA) investment strategy for cry
 - Historical price data fetching from various exchanges (default: Binance)
 - Multi-pair DCA investment simulation with custom allocations
 - Flexible buy periods (daily, weekly, biweekly, monthly)
-- Detailed investment analysis for each pairdca_btc
+- Detailed investment analysis for each pair
 - Overall portfolio performance metrics
 - Visual representation of results with price charts and P&L graphs
 - Support for different trading pairs with percentage allocation
 - Configurable daily investment amount
 - Fear Index tracking (% of days spent in negative returns)
-- Export of analysis results to CSV
 - Rich console output with detailed metrics and progress indicators
 
 ## Requirements
@@ -34,6 +33,7 @@ numpy>=1.24.0
 
 1. Clone this repository
 2. Install dependencies:
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -41,21 +41,25 @@ pip install -r requirements.txt
 ## Usage
 
 Basic usage (single pair):
+
 ```bash
 python dca_btc.py --daily-investment 10 --pairs BTC/USDT:100
 ```
 
 Multiple pairs with allocation:
+
 ```bash
 python dca_btc.py --daily-investment 100 --pairs BTC/USDT:80 ETH/USDT:20
 ```
 
 Weekly investment:
+
 ```bash
 python dca_btc.py --daily-investment 100 --pairs BTC/USDT:60 ETH/USDT:30 SOL/USDT:10 --buy-period 1w
 ```
 
 Advanced options:
+
 ```bash
 python dca_btc.py --start-date 2020-01-01 --end-date 2023-12-31 --daily-investment 100 \
                   --pairs BTC/USDT:50 ETH/USDT:30 DOT/USDT:20 \
@@ -79,6 +83,7 @@ python dca_btc.py --start-date 2020-01-01 --end-date 2023-12-31 --daily-investme
 ## Output
 
 The tool generates:
+
 1. Detailed investment summary for each pair in the console, including:
    - Total investment and current value
    - Average cost basis and current price
@@ -89,27 +94,31 @@ The tool generates:
 3. Visual analysis based on selected plot-type:
    - Individual pair charts showing price history, cost basis, and P/L (when using 'all' or 'both')
    - Total portfolio performance chart (when using 'total' or 'both')
-4. CSV files containing detailed analysis data
-5. All output files are saved in the `dca/` directory with timestamps for easy tracking
+
+All generated charts are saved in the `dca/` directory with timestamps for easy tracking
 
 ## Examples
 
 1. Invest $100 daily, 80% in BTC and 20% in ETH:
+
 ```bash
 python dca_btc.py --daily-investment 100 --pairs BTC/USDT:80 ETH/USDT:20
 ```
 
 2. Weekly $500 investment split across three coins:
+
 ```bash
 python dca_btc.py --daily-investment 500 --pairs BTC/USDT:50 ETH/USDT:30 SOL/USDT:20 --buy-period 1w
 ```
 
 3. Monthly $1000 investment in BTC only:
+
 ```bash
 python dca_btc.py --daily-investment 1000 --pairs BTC/USDT:100 --buy-period 1m
 ```
 
 4. Generate only total portfolio chart for multiple pairs:
+
 ```bash
 python dca_btc.py --daily-investment 200 --pairs BTC/USDT:40 ETH/USDT:40 SOL/USDT:20 --plot-type total
 ```
@@ -140,5 +149,5 @@ Example portfolio summary:
 • Current Value: $707,705.49
 • Net Profit/Loss: $520,105.49 (+277.24%)
 
-The tool also generates detailed charts and CSV files in the dca/ directory for further analysis.
+The tool also generates detailed charts in the dca/ directory for further analysis.
 ```

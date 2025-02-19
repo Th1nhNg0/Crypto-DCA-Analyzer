@@ -108,3 +108,96 @@ class DCAVisualizer:
         plt.savefig(f'dca/dca_analysis_{timestamp}_{self.token_symbol.lower()}.png', 
                    dpi=300, bbox_inches='tight',
                    pad_inches=0.2)
+
+    def plot_total_portfolio(self, all_results, timestamp):
+        fig = plt.figure(figsize=(12, 8))
+        
+        # Create subplots with proper spacing
+        ax1 = plt.subplot2grid((2, 1), (0, 0), rowspan=1)
+        ax2 = plt.subplot2grid((2, 1), (1, 0), rowspan=1)
+        plt.subplots_adjust(hspace=0.3)
+        
+        total_invested = 0
+        total_current_value = 0
+        dates = None
+        
+        # Calculate totals and combine data
+        for pair_data in all_results.values():
+            r = pair_data['results']
+            if dates is None:
+                dates = r['dates']
+                total_prices = np.zeros(len(dates))
+                total_dca_prices = np.zeros(len(dates))
+                total_values = np.zeros(len(dates))
+                total_costs = np.zeros(len(dates))
+            
+            # Calculate total value directly without token_amount
+            prices = np.array(r['prices'])
+            dca_prices = np.array(r['dca_prices'])
+            total_values += np.array(r['values']) if 'values' in r else prices * (r['total_invested'] / dca_prices[-1])
+            total_costs += np.array(r['costs']) if 'costs' in r else dca_prices * (r['total_invested'] / dca_prices[-1])
+            total_invested += r['total_invested']
+            total_current_value += r['current_value']
+        
+        # Calculate total portfolio PnL percentages
+        total_pnl_percentages = [(v - c) / c * 100 if c > 0 else 0 
+                                for v, c in zip(total_values, total_costs)]
+        
+        # Plot total portfolio value
+        ax1.plot(dates, total_values, label='Portfolio Value', color='#3498db', linewidth=2)
+        ax1.plot(dates, total_costs, label='Total Cost Basis', color='#2ecc71', 
+                linewidth=2, linestyle='--')
+        
+        # Fill between areas
+        ax1.fill_between(dates, total_values, total_costs,
+                        where=total_values >= total_costs,
+                        color='#2ecc71', alpha=0.15)
+        ax1.fill_between(dates, total_values, total_costs,
+                        where=total_values < total_costs,
+                        color='#e74c3c', alpha=0.15)
+        
+        # Annotate current portfolio value
+        ax1.annotate(f'${total_values[-1]:,.0f}',
+                    xy=(dates[-1], total_values[-1]),
+                    xytext=(-50, 20),
+                    textcoords='offset points',
+                    bbox=dict(boxstyle='round,pad=0.5', fc='white', ec='#95a5a6', alpha=0.9),
+                    fontsize=9)
+        
+        ax1.set_ylabel('Value (USD)')
+        ax1.set_title('Total Portfolio Performance')
+        ax1.legend(loc='upper left')
+        
+        # Plot total PnL
+        ax2.plot(dates, total_pnl_percentages, label='Portfolio P/L %', 
+                color='#9b59b6', linewidth=2)
+        
+        # Fill for profit/loss areas
+        ax2.fill_between(dates, total_pnl_percentages, 0,
+                        where=np.array(total_pnl_percentages) >= 0,
+                        color='#2ecc71', alpha=0.15)
+        ax2.fill_between(dates, total_pnl_percentages, 0,
+                        where=np.array(total_pnl_percentages) < 0,
+                        color='#e74c3c', alpha=0.15)
+        
+        ax2.axhline(y=0, color='#95a5a6', linestyle='-', linewidth=1)
+        ax2.set_ylabel('Profit/Loss %')
+        ax2.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f'{x:+.1f}%'))
+        ax2.legend(loc='upper left')
+        
+        # Add portfolio stats
+        total_pnl = total_current_value - total_invested
+        total_pnl_percentage = (total_pnl / total_invested * 100) if total_invested > 0 else 0
+        stats = (f'Total Return: {total_pnl_percentage:+.1f}%\n'
+                f'Total Invested: ${total_invested:,.0f}\n'
+                f'Current Value: ${total_current_value:,.0f}')
+        
+        plt.figtext(0.95, 0.95, stats,
+                   bbox=dict(facecolor='white', edgecolor='#95a5a6', alpha=0.9),
+                   verticalalignment='top',
+                   horizontalalignment='right',
+                   fontsize=9)
+        
+        plt.savefig(f'dca/dca_analysis_{timestamp}_total_portfolio.png', 
+                   dpi=300, bbox_inches='tight',
+                   pad_inches=0.2)

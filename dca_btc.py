@@ -22,6 +22,8 @@ def main():
                       help='Trading pairs with allocation in format PAIR:PERCENTAGE (e.g., BTC/USDT:80 ETH/USDT:20)')
     parser.add_argument('--buy-period', type=str, default='1d',
                       help='Buy period (e.g., 1d=daily, 1w=weekly, 2w=biweekly, 1m=monthly)')
+    parser.add_argument('--plot-type', type=str, choices=['all', 'total', 'both'], default='both',
+                      help='Type of plot to generate: all (individual pairs), total (portfolio), or both')
     
     args = parser.parse_args()
     
@@ -63,11 +65,19 @@ def main():
         # Create the charts directory
         os.makedirs('dca', exist_ok=True)
         
-        # Generate individual pair charts with consistent naming
-        for pair, data in results.items():
-            token = pair.split('/')[0]
-            visualizer = DCAVisualizer(data['results'], token, start_date, end_date)
-            visualizer.plot_single_pair(timestamp)  # Pass timestamp for consistent naming
+        # Generate charts based on plot-type
+        if args.plot_type in ['all', 'both']:
+            for pair, data in results.items():
+                token = pair.split('/')[0]
+                visualizer = DCAVisualizer(data['results'], token, start_date, end_date)
+                visualizer.plot_single_pair(timestamp)
+        
+        if args.plot_type in ['total', 'both']:
+            # Use the first pair's data to initialize the visualizer
+            first_pair = list(results.keys())[0]
+            first_data = results[first_pair]['results']
+            visualizer = DCAVisualizer(first_data, 'PORTFOLIO', start_date, end_date)
+            visualizer.plot_total_portfolio(results, timestamp)
         
         # Show completion message with new naming pattern
         console.print(Panel(

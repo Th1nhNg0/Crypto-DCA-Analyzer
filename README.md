@@ -71,6 +71,10 @@ python dca_btc.py --start-date 2020-01-01 --end-date 2023-12-31 --daily-investme
 - `--exchange`: Exchange to fetch data from (default: binance)
 - `--pairs`: List of trading pairs with allocation percentages (e.g., BTC/USDT:80 ETH/USDT:20)
 - `--buy-period`: Investment frequency (e.g., 1d=daily, 1w=weekly, 2w=biweekly, 1m=monthly)
+- `--plot-type`: Type of plot to generate (choices: 'all', 'total', 'both')
+  - 'all': Generate individual charts for each trading pair
+  - 'total': Generate only the total portfolio performance chart
+  - 'both': Generate both individual and portfolio charts (default)
 
 ## Output
 
@@ -82,11 +86,11 @@ The tool generates:
    - Fear Index showing percentage of days in negative territory
    - Highest and lowest prices with dates
 2. Overall portfolio performance metrics with allocation breakdown
-3. Price charts and CSV files saved with consistent naming (e.g., `dca_analysis_20240219_123456_btc.png` and `dca_analysis_20240219_123456.csv`):
-   - Price history and average cost basis
-   - Profit/loss percentage over time
-   - Key statistics and trends
-4. All output files are saved in the `dca/` directory with timestamps for easy tracking
+3. Visual analysis based on selected plot-type:
+   - Individual pair charts showing price history, cost basis, and P/L (when using 'all' or 'both')
+   - Total portfolio performance chart (when using 'total' or 'both')
+4. CSV files containing detailed analysis data
+5. All output files are saved in the `dca/` directory with timestamps for easy tracking
 
 ## Examples
 
@@ -103,6 +107,11 @@ python dca_btc.py --daily-investment 500 --pairs BTC/USDT:50 ETH/USDT:30 SOL/USD
 3. Monthly $1000 investment in BTC only:
 ```bash
 python dca_btc.py --daily-investment 1000 --pairs BTC/USDT:100 --buy-period 1m
+```
+
+4. Generate only total portfolio chart for multiple pairs:
+```bash
+python dca_btc.py --daily-investment 200 --pairs BTC/USDT:40 ETH/USDT:40 SOL/USDT:20 --plot-type total
 ```
 
 ## Example Output
@@ -133,11 +142,3 @@ Example portfolio summary:
 
 The tool also generates detailed charts and CSV files in the dca/ directory for further analysis.
 ```
-
-## Notes
-
-- The tool automatically creates a `dca/` directory for storing output files
-- Analysis results are saved with timestamps for historical reference
-- Uses the Rich library for beautiful console output with progress indicators
-- Supports any trading pair available on the selected exchange
-- Error handling for network issues and exchange limitations

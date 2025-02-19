@@ -1,5 +1,5 @@
-pandas>=2.1.0
-matplotlib>=3.8.0
-ccxt>=4.1.13
+pandas>=2.1.4
+matplotlib>=3.8.2
+ccxt>=4.1.83
 rich>=13.7.0
-numpy>=1.24.0
+numpy>=1.26.3

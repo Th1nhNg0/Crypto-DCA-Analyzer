@@ -2,9 +2,10 @@
 
 A Python tool to analyze Dollar Cost Averaging (DCA) investment strategy for cryptocurrencies, supporting multiple pairs and custom buy periods.
 
+![CLI Example](./media/cli_log.png)
+
 ![DCA Analysis Example](./media/total.png)
 
-![CLI Example](./media/cli_log.png)
 
 ## Features
 

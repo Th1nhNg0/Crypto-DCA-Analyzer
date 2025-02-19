@@ -4,9 +4,12 @@ from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.box import DOUBLE, ROUNDED
+from rich import box
+from rich.style import Style
+from rich.layout import Layout
+from rich.live import Live
 
 console = Console()
-
 
 class PortfolioAnalyzer:
     def __init__(self, results):
@@ -23,30 +26,26 @@ class PortfolioAnalyzer:
     def _create_progress_bar(self, percentage, width=20):
         filled = int(width * (percentage / 100))
         color = "green" if percentage >= 80 else "yellow" if percentage >= 20 else "red"
-
-        # Create the bar and percentage display
         bar = ("█" * filled) + "░" * (width - filled)
         percentage_text = f" [{color}]{percentage:>5.1f}%[/{color}]"
-
         return f"[{color}]{bar}[/{color}]{percentage_text}"
 
     def _get_trend_arrow(self, value):
-        if value > 100:
-            return "⬆️"  # Exceptional gain (>100%)
-        elif value > 50:
-            return "↗️↗️"  # Very strong uptrend
-        elif value > 20:
-            return "↗️"  # Strong uptrend
-        elif value > 5:
-            return "➡️↗️"  # Moderate uptrend
-        elif value > -5:
-            return "➡️"  # Sideways
-        elif value > -20:
-            return "➡️↘️"  # Moderate downtrend
-        elif value > -50:
-            return "↘️"  # Strong downtrend
-        else:
-            return "⬇️"  # Severe downtrend
+        if value > 100: return "🚀"  # Rocket for exceptional gains
+        elif value > 50: return "⬆️⬆️"  # Double up for very strong gains
+        elif value > 20: return "⬆️"  # Up for strong gains
+        elif value > 5: return "↗️"  # Up-right for moderate gains
+        elif value > -5: return "➡️"  # Right for sideways
+        elif value > -20: return "↘️"  # Down-right for moderate losses
+        elif value > -50: return "⬇️"  # Down for strong losses
+        else: return "💥"  # Explosion for severe losses
+
+    def _get_mood_indicator(self, fear_index):
+        if fear_index < 20: return "🤑"  # Extreme greed
+        elif fear_index < 30: return "😊"  # Optimistic
+        elif fear_index < 50: return "😐"  # Neutral
+        elif fear_index < 70: return "😰"  # Fear
+        else: return "😱"  # Extreme fear
 
     def display_pair_summary(self, pair, data):
         allocation = data["allocation"]
@@ -144,60 +143,87 @@ class PortfolioAnalyzer:
         }
 
     def display_portfolio_summary(self, timestamp=None):
-        total_invested = sum(
-            data["results"]["total_invested"] for data in self.results.values()
-        )
-        total_value = sum(
-            data["results"]["current_value"] for data in self.results.values()
-        )
+        total_invested = sum(data["results"]["total_invested"] for data in self.results.values())
+        total_value = sum(data["results"]["current_value"] for data in self.results.values())
         total_pnl = total_value - total_invested
-        total_pnl_percentage = (
-            (total_pnl / total_invested * 100) if total_invested > 0 else 0
+        total_pnl_percentage = (total_pnl / total_invested * 100) if total_invested > 0 else 0
+
+        # Create a rich table with custom styling
+        table = Table(
+            title="🎯 Portfolio Performance Summary",
+            box=box.ROUNDED,
+            header_style="bold cyan",
+            title_style="bold magenta",
+            show_lines=True
         )
 
-        table = Table(title="Portfolio Summary", box=ROUNDED)
-        table.add_column("Pair", style="cyan")
-        table.add_column("Allocation", justify="right")
-        table.add_column("Invested", justify="right")
-        table.add_column("Current Value", justify="right")
-        table.add_column("P/L", justify="right")
-        table.add_column("P/L %", justify="right")
-        table.add_column("Fear Index", justify="right")
+        # Add columns with emoji icons
+        table.add_column("💱 Pair", style="cyan")
+        table.add_column("📊 Allocation", justify="right")
+        table.add_column("💰 Invested", justify="right")
+        table.add_column("💎 Current Value", justify="right")
+        table.add_column("📈 P/L", justify="right")
+        table.add_column("📊 P/L %", justify="right")
+        table.add_column("😱 Fear Index", justify="right")
+
+        avg_fear_index = 0
+        num_pairs = 0
 
         for pair, data in self.results.items():
             results = data["results"]
             pnl = results["current_value"] - results["total_invested"]
-            pnl_pct = (
-                (pnl / results["total_invested"] * 100)
-                if results["total_invested"] > 0
-                else 0
-            )
+            pnl_pct = (pnl / results["total_invested"] * 100) if results["total_invested"] > 0 else 0
+            
+            # Calculate mood indicator
+            fear_index = results["fear_index"]
+            avg_fear_index += fear_index
+            num_pairs += 1
+            mood = self._get_mood_indicator(fear_index)
 
+            # Determine color based on performance
             color = "green" if pnl >= 0 else "red"
+            trend = self._get_trend_arrow(pnl_pct)
+
             table.add_row(
-                pair,
+                f"{pair} {trend}",
                 f"{data['allocation']}%",
                 f"${results['total_invested']:,.2f}",
                 f"${results['current_value']:,.2f}",
-                f"${pnl:,.2f}",
-                f"{pnl_pct:+.2f}%",
-                f"{results['fear_index']:.1f}%",
+                f"[{color}]${pnl:,.2f}[/{color}]",
+                f"[{color}]{pnl_pct:+.2f}%[/{color}]",
+                f"{fear_index:.1f}% {mood}"
             )
 
-        # Add total row
+        # Add total row with special styling
+        avg_fear_index = avg_fear_index / num_pairs if num_pairs > 0 else 0
+        total_mood = self._get_mood_indicator(avg_fear_index)
+        total_trend = self._get_trend_arrow(total_pnl_percentage)
+        total_color = "green" if total_pnl >= 0 else "red"
+
         table.add_row(
-            "TOTAL",
-            "100%",
-            f"${total_invested:,.2f}",
-            f"${total_value:,.2f}",
-            f"${total_pnl:,.2f}",
-            f"{total_pnl_percentage:+.2f}%",
-            "-",
-            style="bold",
+            f"[bold]📈 TOTAL {total_trend}[/bold]",
+            "[bold]100%[/bold]",
+            f"[bold]${total_invested:,.2f}[/bold]",
+            f"[bold]${total_value:,.2f}[/bold]",
+            f"[bold {total_color}]${total_pnl:,.2f}[/bold {total_color}]",
+            f"[bold {total_color}]{total_pnl_percentage:+.2f}%[/bold {total_color}]",
+            f"[bold]{avg_fear_index:.1f}% {total_mood}[/bold]",
+            style="bold"
+        )
+
+        # Display performance indicators in a panel
+        performance_summary = (
+            f"💼 Total Portfolio Value: ${total_value:,.2f}\n"
+            f"📊 Total Return: [{total_color}]{total_pnl_percentage:+.2f}%[/{total_color}]\n"
+            f"🌡️ Average Fear Index: {avg_fear_index:.1f}% {total_mood}\n"
+            f"📅 Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
         )
 
         console.print("\n")
+        console.print(Panel(performance_summary, title="📊 Portfolio Overview", border_style="cyan"))
+        console.print("\n")
         console.print(table)
+        console.print("\n")
 
     def _save_analysis_to_csv(self, pair_stats, total_stats, filename):
         data = []

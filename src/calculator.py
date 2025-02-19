@@ -1,89 +1,97 @@
+import numpy as np
+from datetime import datetime
+
 class DCACalculator:
     def __init__(self, price_data, daily_investment=1.0, buy_period="1d"):
-        # Filter price data to ensure it ends on the correct date
         self.price_data = price_data
         self.daily_investment = daily_investment
         self.buy_period = self._parse_buy_period(buy_period)
         self.results = self._calculate_dca()
 
     def _parse_buy_period(self, period):
-        """Convert period string to number of days (e.g., '1d'->1, '1w'->7, '2w'->14, '1m'->30)"""
+        """Convert period string to number of days"""
+        units = {"d": 1, "w": 7, "m": 30}
         number = int(period[:-1])
         unit = period[-1].lower()
-        if unit == "d":
-            return number
-        elif unit == "w":
-            return number * 7
-        elif unit == "m":
-            return number * 30
-        raise ValueError(
-            f"Invalid buy period format: {period}. Use format like 1d, 1w, 2w, 1m"
-        )
+        if unit not in units:
+            raise ValueError(f"Invalid buy period format: {period}. Use format like 1d, 1w, 2w, 1m")
+        return number * units[unit]
 
     def _calculate_dca(self):
-        # Ensure we're using data only up to the last complete day
         dates = self.price_data["Start"].tolist()
-        prices = self.price_data["Close"].tolist()
-
-        total_invested = 0
-        total_crypto = 0
-        dca_prices, pnl_percentages = [], []
-        highest_price = float("-inf")
-        lowest_price = float("inf")
-        best_day = worst_day = None
-        days_since_last_buy = 0
-        negative_pnl_days = 0
-        total_days = 0
-
-        for _, row in self.price_data.iterrows():
-            price = row["Close"]
-            if price > highest_price:
-                highest_price = price
-                best_day = (price, row["Start"])
-            if price < lowest_price:
-                lowest_price = price
-                worst_day = (price, row["Start"])
-
-            days_since_last_buy += 1
-            if days_since_last_buy >= self.buy_period:
+        prices = np.array(self.price_data["Close"].tolist())
+        
+        # Initialize arrays for vectorized operations
+        investments = np.zeros(len(dates))
+        crypto_amounts = np.zeros(len(dates))
+        days_since_buy = 0
+        
+        # Calculate buy points
+        for i in range(len(dates)):
+            days_since_buy += 1
+            if days_since_buy >= self.buy_period:
                 investment = self.daily_investment * self.buy_period
-                crypto_bought = investment / price
-                total_crypto += crypto_bought
-                total_invested += investment
-                days_since_last_buy = 0
-
-            current_value = total_crypto * price
-            dca_price = total_invested / total_crypto if total_crypto > 0 else price
-            pnl_percentage = (
-                ((price - dca_price) / dca_price * 100) if total_crypto > 0 else 0
-            )
-
-            # Track negative PnL days
-            if total_invested > 0:  # Only count after first investment
-                total_days += 1
-                if current_value < total_invested:
-                    negative_pnl_days += 1
-
-            dca_prices.append(dca_price)
-            pnl_percentages.append(pnl_percentage)
-
-        fear_index = (negative_pnl_days / total_days * 100) if total_days > 0 else 0
-
+                investments[i] = investment
+                crypto_amounts[i] = investment / prices[i]
+                days_since_buy = 0
+        
+        # Cumulative calculations
+        total_invested = np.cumsum(investments)
+        total_crypto = np.cumsum(crypto_amounts)
+        
+        # Avoid division by zero
+        nonzero_crypto = np.where(total_crypto > 0, total_crypto, np.inf)
+        dca_prices = np.where(total_crypto > 0, total_invested / nonzero_crypto, prices)
+        
+        # Current values and PnL calculations
+        current_values = total_crypto * prices
+        pnl_percentages = np.where(total_crypto > 0, 
+                                 ((prices - dca_prices) / dca_prices * 100),
+                                 np.zeros_like(prices))
+        
+        # Find highest and lowest prices with dates
+        highest_idx = np.argmax(prices)
+        lowest_idx = np.argmin(prices)
+        
+        # Calculate drawdown and markup periods
+        rolling_max = np.maximum.accumulate(current_values)
+        drawdowns = (current_values - rolling_max) / rolling_max * 100
+        max_drawdown = np.min(drawdowns)
+        
+        # Calculate positive and negative days
+        invested_mask = total_invested > 0
+        negative_pnl_days = np.sum((current_values < total_invested) & invested_mask)
+        total_invested_days = np.sum(invested_mask)
+        
+        # Calculate volatility
+        daily_returns = np.diff(prices) / prices[:-1]
+        volatility = np.std(daily_returns) * np.sqrt(365) * 100
+        
+        # Calculate Sharpe ratio (assuming risk-free rate of 2%)
+        risk_free_rate = 0.02
+        excess_returns = daily_returns - (risk_free_rate / 365)
+        sharpe_ratio = np.sqrt(365) * np.mean(excess_returns) / np.std(daily_returns) if len(daily_returns) > 0 else 0
+        
         return {
             "dates": dates,
-            "prices": prices,
-            "dca_prices": dca_prices,
-            "pnl_percentages": pnl_percentages,
-            "total_invested": total_invested,
-            "total_crypto": total_crypto,
-            "highest_price": highest_price,
-            "lowest_price": lowest_price,
-            "best_day": best_day,
-            "worst_day": worst_day,
-            "avg_price": self.price_data["Close"].mean(),
-            "cost_basis": total_invested / total_crypto if total_crypto > 0 else 0,
-            "current_value": total_crypto * self.price_data.iloc[-1]["Close"],
-            "fear_index": fear_index,
-            "negative_pnl_days": negative_pnl_days,
-            "total_days": total_days,
+            "prices": prices.tolist(),
+            "dca_prices": dca_prices.tolist(),
+            "pnl_percentages": pnl_percentages.tolist(),
+            "total_invested": total_invested[-1],
+            "total_crypto": total_crypto[-1],
+            "highest_price": prices[highest_idx],
+            "lowest_price": prices[lowest_idx],
+            "best_day": (prices[highest_idx], dates[highest_idx]),
+            "worst_day": (prices[lowest_idx], dates[lowest_idx]),
+            "avg_price": np.mean(prices),
+            "cost_basis": dca_prices[-1],
+            "current_value": current_values[-1],
+            "fear_index": (negative_pnl_days / total_invested_days * 100) if total_invested_days > 0 else 0,
+            "negative_pnl_days": int(negative_pnl_days),
+            "total_days": int(total_invested_days),
+            "max_drawdown": max_drawdown,
+            "volatility": volatility,
+            "sharpe_ratio": sharpe_ratio,
+            "values": current_values.tolist(),
+            "costs": total_invested.tolist()
         }
